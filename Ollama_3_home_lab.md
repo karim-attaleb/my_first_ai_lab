@@ -1,6 +1,6 @@
 # Building an AI Home Lab for Code Generation with Ollama 3
 
-This guide provides detailed instructions on setting up an AI home lab for efficient code generation. The implementation will leverage **Ollama 3**, a powerful open-source model optimized for code-related tasks. The guide covers hardware requirements, software setup, data preparation, and fine-tuning.
+This guide provides detailed instructions on setting up an AI home lab for efficient code generation. The implementation will leverage **Ollama 3**, a powerful open-source model optimized for code-related tasks, with a specific focus on SQL code in PostgreSQL databases. The guide includes connecting to PostgreSQL, optimizing performance, enhancing security, and ensuring availability based on community best practices.
 
 ---
 
@@ -10,20 +10,21 @@ This guide provides detailed instructions on setting up an AI home lab for effic
 3. [Software Setup](#3-software-setup)
 4. [Data Preparation](#4-data-preparation)
 5. [Fine-Tuning Ollama 3](#5-fine-tuning-ollama-3)
-6. [Code Generation Pipeline](#6-code-generation-pipeline)
-7. [Maintenance and Optimization](#7-maintenance-and-optimization)
+6. [PostgreSQL Integration and Optimization](#6-postgresql-integration-and-optimization)
+7. [Code Generation Pipeline](#7-code-generation-pipeline)
+8. [Maintenance and Optimization](#8-maintenance-and-optimization)
 
 ---
 
 ## 1. Overview
 
-**Ollama 3** is an advanced open-source model designed for code comprehension, generation, and transformation. Fine-tuning this model on your own datasets can improve its performance in generating personalized or domain-specific code.
+**Ollama 3** is an advanced open-source model designed for code comprehension, generation, and transformation. Fine-tuning this model on SQL code enables it to optimize PostgreSQL database performance, security, and availability.
 
-### Why Ollama 3 for Code Generation?
+### Why Ollama 3 for SQL Code Optimization?
 - **Open-Source**: Free to use and customize.
-- **Code-Oriented**: Trained specifically for code-related tasks.
-- **Scalability**: Optimized for both small and large-scale use cases.
-- **Integration**: Easily integrates with tools like VSCode, Jupyter, or CLI utilities.
+- **SQL-Oriented**: Trained specifically for handling code, including SQL.
+- **Integration**: Easily connects to PostgreSQL databases for performance tuning and monitoring.
+- **Scalability**: Optimized for both small and enterprise-scale databases.
 
 ---
 
@@ -54,8 +55,8 @@ sudo apt update && sudo apt upgrade -y
 ### 3.2 Install Dependencies
 Install essential tools and libraries:
 ```bash
-sudo apt install -y python3 python3-pip git build-essential
-pip install torch transformers datasets
+sudo apt install -y python3 python3-pip git build-essential postgresql-client
+pip install torch transformers datasets psycopg2
 ```
 
 ### 3.3 Install Ollama 3
@@ -71,23 +72,24 @@ pip install -r requirements.txt
 ## 4. Data Preparation
 
 ### 4.1 Collect Your Dataset
-- Gather codebases or repositories relevant to your use case (e.g., Python, JavaScript, etc.).
-- Use open-source datasets like [CodeSearchNet](https://github.com/github/CodeSearchNet).
+- Extract SQL code, query plans, and logs from your PostgreSQL database.
+- Use tools like `pg_dump` to export schema and data.
+- Include anonymized sensitive information if needed.
 
 ### 4.2 Preprocess the Data
 Ensure your dataset is clean and tokenized for training:
 ```python
 from datasets import load_dataset
 
-dataset = load_dataset("path_to_your_dataset")
+dataset = load_dataset("path_to_your_sql_dataset")
 
 def preprocess(example):
-    # Example: Truncate long code snippets
-    example["code"] = example["code"][:1000]
+    # Example: Normalize SQL queries
+    example["sql"] = example["sql"].lower()
     return example
 
 preprocessed_dataset = dataset.map(preprocess)
-preprocessed_dataset.save_to_disk("processed_data")
+preprocessed_dataset.save_to_disk("processed_sql_data")
 ```
 
 ### 4.3 Validate Data
@@ -137,15 +139,71 @@ trainer.train()
 
 ### 5.3 Save the Fine-Tuned Model
 ```python
-model.save_pretrained("fine_tuned_ollama3")
-tokenizer.save_pretrained("fine_tuned_ollama3")
+model.save_pretrained("fine_tuned_ollama3_sql")
+tokenizer.save_pretrained("fine_tuned_ollama3_sql")
 ```
 
 ---
 
-## 6. Code Generation Pipeline
+## 6. PostgreSQL Integration and Optimization
 
-### 6.1 Deploy the Model
+### 6.1 Connect to PostgreSQL
+Use Python's `psycopg2` library to interact with your database:
+```python
+import psycopg2
+
+connection = psycopg2.connect(
+    dbname="your_database",
+    user="your_user",
+    password="your_password",
+    host="localhost",
+    port=5432
+)
+cursor = connection.cursor()
+```
+
+### 6.2 Analyze and Optimize Performance
+Run queries and analyze results:
+```python
+# Example: Fetch slow queries from pg_stat_activity
+cursor.execute("""
+SELECT query, state, total_time 
+FROM pg_stat_activity 
+WHERE total_time > 1000;
+""")
+slow_queries = cursor.fetchall()
+
+# Fine-tune recommendations using the model
+for query in slow_queries:
+    inputs = tokenizer(query[0], return_tensors="pt")
+    outputs = model.generate(**inputs)
+    print(f"Optimized Query: {tokenizer.decode(outputs[0])}")
+```
+
+### 6.3 Enhance Security
+- Use the model to analyze and suggest security improvements:
+```python
+cursor.execute("SELECT * FROM information_schema.user_privileges;")
+privileges = cursor.fetchall()
+for privilege in privileges:
+    inputs = tokenizer(privilege[0], return_tensors="pt")
+    outputs = model.generate(**inputs)
+    print(f"Recommended Security Policy: {tokenizer.decode(outputs[0])}")
+```
+
+### 6.4 Ensure High Availability
+- Integrate replication monitoring:
+```python
+cursor.execute("SELECT * FROM pg_stat_replication;")
+replication_status = cursor.fetchall()
+print(replication_status)
+```
+
+---
+
+## 7. Code Generation Pipeline
+
+### 7.1 Deploy the Model
 Serve the model using **FastAPI** or a similar tool:
 ```bash
 pip install fastapi uvicorn
@@ -157,14 +215,14 @@ from fastapi import FastAPI
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 app = FastAPI()
-model = AutoModelForCausalLM.from_pretrained("fine_tuned_ollama3")
-tokenizer = AutoTokenizer.from_pretrained("fine_tuned_ollama3")
+model = AutoModelForCausalLM.from_pretrained("fine_tuned_ollama3_sql")
+tokenizer = AutoTokenizer.from_pretrained("fine_tuned_ollama3_sql")
 
-@app.post("/generate")
-async def generate_code(prompt: str):
-    inputs = tokenizer(prompt, return_tensors="pt")
+@app.post("/optimize")
+async def optimize_sql(query: str):
+    inputs = tokenizer(query, return_tensors="pt")
     outputs = model.generate(**inputs, max_length=200)
-    return {"code": tokenizer.decode(outputs[0], skip_special_tokens=True)}
+    return {"optimized_sql": tokenizer.decode(outputs[0], skip_special_tokens=True)}
 ```
 
 Run the server:
@@ -172,31 +230,31 @@ Run the server:
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 6.2 Test the API
+### 7.2 Test the API
 ```bash
-curl -X POST "http://127.0.0.1:8000/generate" -H "Content-Type: application/json" -d '{"prompt": "Write a Python function to sort a list."}'
+curl -X POST "http://127.0.0.1:8000/optimize" -H "Content-Type: application/json" -d '{"query": "SELECT * FROM large_table"}'
 ```
 
 ---
 
-## 7. Maintenance and Optimization
+## 8. Maintenance and Optimization
 
-### 7.1 Optimize Performance
+### 8.1 Optimize Performance
 - Use quantization libraries like `bitsandbytes` to reduce model size and improve inference speed:
 ```bash
 pip install bitsandbytes
 ```
 
-### 7.2 Monitor Usage
+### 8.2 Monitor Usage
 - Use tools like **TensorBoard** to track metrics:
 ```bash
 pip install tensorboard
 tensorboard --logdir=./results
 ```
 
-### 7.3 Update Data and Retrain
+### 8.3 Update Data and Retrain
 Regularly update your dataset and retrain the model to incorporate new patterns and best practices.
 
 ---
 
-This document provides everything you need to build and fine-tune a home lab for efficient code generation with Ollama 3. Let me know if you need further clarifications!
+This document provides everything you need to build and fine-tune a home lab for efficient SQL code optimization and PostgreSQL database management with Ollama 3. Let me know if you need further clarifications!

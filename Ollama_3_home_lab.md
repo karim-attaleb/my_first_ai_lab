@@ -5,13 +5,13 @@ This guide provides detailed instructions on setting up an AI home lab for effic
 ---
 
 ## Table of Contents
-1. [Overview](#1.Overview)
-2. [Hardware Requirements](#hardware-requirements)
-3. [Software Setup](#software-setup)
-4. [Data Preparation](#data-preparation)
-5. [Fine-Tuning Ollama 3](#fine-tuning-ollama-3)
-6. [Code Generation Pipeline](#code-generation-pipeline)
-7. [Maintenance and Optimization](#maintenance-and-optimization)
+1. [Overview](#1-overview)
+2. [Hardware Requirements](#2-hardware-requirements)
+3. [Software Setup](#3-software-setup)
+4. [Data Preparation](#4-data-preparation)
+5. [Fine-Tuning Ollama 3](#5-fine-tuning-ollama-3)
+6. [Code Generation Pipeline](#6-code-generation-pipeline)
+7. [Maintenance and Optimization](#7-maintenance-and-optimization)
 
 ---
 

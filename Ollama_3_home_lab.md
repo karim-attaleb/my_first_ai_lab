@@ -5,7 +5,7 @@ This guide provides detailed instructions on setting up an AI home lab for effic
 ---
 
 ## Table of Contents
-1. [Overview](#Overview)
+1. [Overview](#1. Overview)
 2. [Hardware Requirements](#hardware-requirements)
 3. [Software Setup](#software-setup)
 4. [Data Preparation](#data-preparation)
